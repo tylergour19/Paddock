@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paddock — Horse Racing Handicapper</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0b;
+    --surface: #1a1813;
+    --surface2: #221f18;
+    --surface3: #2c2820;
+    --border: #3a342a;
+    --border2: #4a4238;
+    --gold: #c8a84b;
+    --gold2: #e8c96a;
+    --gold-dim: #6b5a28;
+    --text: #f0ead8;
+    --text2: #9e9282;
+    --text3: #5c5448;
+    --green: #4caf7d;
+    --red: #e05c5c;
+    --amber: #e0a03c;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* Header */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--gold2);
+    letter-spacing: -0.5px;
+  }
+  .header .subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  /* Layout */
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* Panels */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+  }
+  .panel-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text2);
+  }
+  .panel-body { padding: 16px; }
+
+  /* Race info */
+  .race-info {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .race-info { grid-template-columns: repeat(2, 1fr); } }
+
+  /* Input fields */
+  label {
+    display: block;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 5px;
+  }
+  input, select {
+    width: 100%;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: var(--gold-dim); }
+  input::placeholder { color: var(--text3); }
+  select option { background: var(--surface2); }
+
+  /* Horse table */
+  .horse-table { width: 100%; border-collapse: collapse; }
+  .horse-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .horse-table td {
+    padding: 4px 4px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .horse-table tr:last-child td { border-bottom: none; }
+  .horse-table input {
+    padding: 5px 7px;
+    font-size: 12px;
+  }
+  .horse-table select { padding: 5px 4px; font-size: 11px; }
+
+  .post-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  .box-toggle {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: var(--surface3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.15s;
+    margin: 0 auto;
+  }
+  .box-toggle.active {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+    color: var(--gold2);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--bg);
+  }
+  .btn-primary:hover { background: var(--gold2); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* Results */
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-rank {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .result-name {
+    font-size: 13px;
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+  }
+  .result-name .post {
+    font-size: 10px;
+    color: var(--text3);
+    margin-left: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+  .result-bar-wrap { flex: 1; min-width: 60px; }
+  .result-bar {
+    height: 4px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .result-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--gold);
+    transition: width 0.4s ease;
+  }
+  .result-prob {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--gold2);
+    width: 42px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .edge-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    min-width: 54px;
+    text-align: center;
+  }
+  .edge-value { background: rgba(76,175,125,0.15); color: var(--green); }
+  .edge-neutral { background: var(--surface3); color: var(--text3); }
+  .edge-fade { background: rgba(224,92,92,0.12); color: var(--red); }
+  .min-odds-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    min-width: 46px;
+    text-align: center;
+    background: rgba(200,168,75,0.12);
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+  }
+  .box-star {
+    font-size: 13px;
+    flex-shrink: 0;
+    opacity: 0.3;
+  }
+  .box-star.active { opacity: 1; color: var(--gold); }
+
+  /* Exacta section */
+  .exacta-combo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .exacta-combo:last-child { border-bottom: none; }
+  .combo-horses {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .combo-arrow { color: var(--text3); }
+  .combo-prob {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    width: 44px;
+    text-align: right;
+  }
+  .combo-ev {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    min-width: 72px;
+    text-align: center;
+    color: var(--text3);
+    background: var(--surface3);
+  }
+  .combo-ev.good { background: rgba(76,175,125,0.15); color: var(--green); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--gold2);
+  }
+  .stat-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+  .empty-state {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .section-gap { margin-top: 24px; }
+
+  .payout-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .payout-input-row label { margin: 0; white-space: nowrap; font-size: 10px; }
+  .payout-input-row input { width: 80px; }
+  .payout-note { font-size: 10px; color: var(--text3); margin-top: 6px; }
+
+  .tab-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: var(--surface2);
+    border-color: var(--border);
+    color: var(--gold);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Paddock</h1>
+  <span class="subtitle">Thoroughbred Handicapper</span>
+</div>
+
+<div class="container">
+
+  <!-- Race Info -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-header">
+      <span class="panel-title">Race Details</span>
+    </div>
+    <div class="panel-body">
+      <div class="race-info">
+        <div>
+          <label>Track</label>
+          <input type="text" id="track" placeholder="e.g. Saratoga">
+        </div>
+        <div>
+          <label>Race #</label>
+          <input type="number" id="raceNum" placeholder="3" min="1" max="15">
+        </div>
+        <div>
+          <label>Distance</label>
+          <select id="distance">
+            <option value="">Select...</option>
+            <option>1f</option><option>1.5f</option><option>2f</option>
+            <option>2.5f</option><option>3f</option><option>3.5f</option>
+            <option>4f</option><option>4.5f</option><option>5f</option>
+            <option>5.5f</option><option>6f</option><option>6.5f</option>
+            <option>7f</option><option>7.5f</option>
+            <option>1m</option><option>1m 70y</option><option>1 1/16m</option>
+            <option>1 1/8m</option><option>1 3/16m</option><option>1 1/4m</option>
+            <option>1 3/8m</option><option>1 1/2m</option>
+          </select>
+        </div>
+        <div>
+          <label>Surface</label>
+          <select id="surface">
+            <option value="">Select...</option>
+            <option>Dirt</option>
+            <option>Turf</option>
+            <option>Synthetic</option>
+          </select>
+        </div>
+        <div>
+          <label>Class Today</label>
+          <select id="classTodayGlobal">
+            <option value="5000">Maiden</option>
+            <option value="8000">Maiden Claiming</option>
+            <option value="10000">Claiming $10k</option>
+            <option value="16000">Claiming $16k</option>
+            <option value="20000">Claiming $20k</option>
+            <option value="25000" selected>Claiming $25k</option>
+            <option value="32000">Claiming $32k</option>
+            <option value="40000">Claiming $40k</option>
+            <option value="50000">Claiming $50k</option>
+            <option value="62500">Claiming $62.5k</option>
+            <option value="75000">Claiming $75k</option>
+            <option value="100000">Allowance</option>
+            <option value="130000">Allowance Opt. Clm.</option>
+            <option value="200000">Stakes</option>
+            <option value="500000">Graded Stakes</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Horse Input Table -->
+      <div style="overflow-x:auto">
+        <table class="horse-table">
+          <thead>
+            <tr>
+              <th>Post</th>
+              <th style="min-width:110px">Horse Name</th>
+              <th title="Morning Line odds e.g. 5 for 5/1">ML Odds</th>
+              <th title="Best Equibase Speed Figure (last 3 races)">ESF Best</th>
+              <th title="2nd most recent speed figure">ESF 2nd</th>
+              <th title="3rd most recent">ESF 3rd</th>
+              <th title="Class last race">Class Last</th>
+              <th title="Distance fit: 1=exact, 0.5=close, 0=none">Dist Fit</th>
+              <th title="Surface match: 1=yes, 0=no">Surf Fit</th>
+              <th title="Jockey win% at meet (e.g. 0.18)">Jock%</th>
+              <th title="Trainer win% at meet">Trn%</th>
+              <th title="Days since last race">Days Off</th>
+              <th title="Add to exacta box">Box</th>
+            </tr>
+          </thead>
+          <tbody id="horseBody"></tbody>
+        </table>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runModel()">&#9654; Run Model</button>
+        <button class="btn btn-ghost" onclick="clearAll()">Clear All</button>
+        <button class="btn btn-ghost" onclick="loadDemo()">Load Demo Race</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="two-col">
+    <!-- Left: Win Probabilities -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Win Probabilities</span>
+        <span id="resultCount" style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace"></span>
+      </div>
+      <div class="panel-body">
+        <div id="resultsArea"><div class="empty-state">Enter horses and run model</div></div>
+      </div>
+    </div>
+
+    <!-- Right: Exacta Box -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Exacta Box Analysis</span>
+      </div>
+      <div class="panel-body">
+        <div id="exactaArea"><div class="empty-state">Flag horses with ★ to build box</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const NUM_HORSES = 12;
+
+// Class codes
+const CLASS_CODES = {
+  'Maiden': 5000, 'MClaiming': 8000, 'Claiming': null,
+  'Allowance': 40000, 'Stakes': 80000
+};
+
+function buildTable() {
+  const tbody = document.getElementById('horseBody');
+  tbody.innerHTML = '';
+  for (let i = 1; i <= NUM_HORSES; i++) {
+    const row = document.createElement('tr');
+    row.id = `hr${i}`;
+    row.innerHTML = `
+      <td><span class="post-badge">${i}</span></td>
+      <td><input type="text" id="name${i}" placeholder="Horse ${i}"></td>
+      <td><input type="number" id="ml${i}" placeholder="5" min="0.1" step="0.5" style="width:58px"></td>
+      <td><input type="number" id="esf1_${i}" placeholder="85" min="0" max="130" style="width:54px"></td>
+      <td><input type="number" id="esf2_${i}" placeholder="" min="0" max="130" style="width:54px"></td>
+      <td><input type="number" id="esf3_${i}" placeholder="" min="0" max="130" style="width:54px"></td>
+      <td><input type="number" id="classLast${i}" placeholder="25000" style="width:72px"></td>
+      <td>
+        <select id="dist${i}" style="width:60px">
+          <option value="0">None</option>
+          <option value="0.5">Close</option>
+          <option value="1">Exact</option>
+        </select>
+      </td>
+      <td>
+        <select id="surf${i}" style="width:56px">
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+      </td>
+      <td><input type="number" id="jock${i}" placeholder=".18" min="0" max="1" step="0.01" style="width:58px"></td>
+      <td><input type="number" id="trn${i}" placeholder=".15" min="0" max="1" step="0.01" style="width:58px"></td>
+      <td><input type="number" id="days${i}" placeholder="21" min="0" max="365" style="width:54px"></td>
+      <td>
+        <div class="box-toggle" id="box${i}" onclick="toggleBox(${i})">★</div>
+      </td>
+    `;
+    tbody.appendChild(row);
+  }
+}
+
+function toggleBox(i) {
+  const el = document.getElementById(`box${i}`);
+  el.classList.toggle('active');
+}
+
+function isBoxed(i) {
+  return document.getElementById(`box${i}`).classList.contains('active');
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const v = parseFloat(el.value);
+  return isNaN(v) ? null : v;
+}
+
+function getText(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function scaleField(arr) {
+  const vals = arr.map(x => x ?? 0);
+  const mn = Math.min(...vals);
+  const mx = Math.max(...vals);
+  if (mx === mn) return vals.map(() => 50);
+  return vals.map(v => (v - mn) / (mx - mn) * 100);
+}
+
+function freshnessScore(days) {
+  if (days === null || days === 0) return 0;
+  if (days <= 7) return 40;
+  if (days <= 13) return 60;
+  if (days <= 45) return 100;
+  if (days <= 90) return 75;
+  if (days <= 180) return 50;
+  return 30;
+}
+
+function runModel() {
+  const horses = [];
+  for (let i = 1; i <= NUM_HORSES; i++) {
+    const name = getText(`name${i}`);
+    if (!name) continue;
+    const esf1 = getVal(`esf1_${i}`) ?? 0;
+    const esf2 = getVal(`esf2_${i}`) ?? 0;
+    const esf3 = getVal(`esf3_${i}`) ?? 0;
+    const bestESF = Math.max(esf1, esf2, esf3);
+    const trend = (esf2 > 0 && esf3 > 0) ? esf1 - esf3 : 0;
+    const classToday = parseFloat(document.getElementById('classTodayGlobal').value) || 0;
+    const classLast = getVal(`classLast${i}`) ?? 0;
+    const classDelta = (classToday > 0 && classLast > 0) ? classLast - classToday : 0;
+    const distFit = parseFloat(document.getElementById(`dist${i}`).value) || 0;
+    const surfFit = parseFloat(document.getElementById(`surf${i}`).value) || 0;
+    const distSurfRaw = distFit * 0.6 + surfFit * 0.4;
+    const jock = getVal(`jock${i}`) ?? 0;
+    const trn = getVal(`trn${i}`) ?? 0;
+    const jtRaw = (jock + trn) / 2;
+    const days = getVal(`days${i}`);
+    const ml = getVal(`ml${i}`) ?? 5;
+    horses.push({
+      post: i, name, ml,
+      bestESF, trend, classDelta,
+      distSurfRaw, jtRaw,
+      freshnessScore: freshnessScore(days),
+      boxed: isBoxed(i)
+    });
+  }
+
+  if (horses.length < 2) {
+    alert('Enter at least 2 horses to run the model.');
+    return;
+  }
+
+  // Scale each factor across field
+  const speedScaled = scaleField(horses.map(h => h.bestESF));
+  const trendScaled = scaleField(horses.map(h => h.trend));
+  const classScaled = scaleField(horses.map(h => h.classDelta));
+  const jtScaled = scaleField(horses.map(h => h.jtRaw));
+  // distSurf is already 0–100, freshness already 0–100 — just scale relative to field
+  const distSurfScaled = scaleField(horses.map(h => h.distSurfRaw * 100));
+  const freshScaled = scaleField(horses.map(h => h.freshnessScore));
+
+  const weighted = horses.map((h, idx) => {
+    const w = speedScaled[idx] * 0.30
+      + trendScaled[idx] * 0.15
+      + classScaled[idx] * 0.15
+      + distSurfScaled[idx] * 0.15
+      + jtScaled[idx] * 0.15
+      + freshScaled[idx] * 0.10;
+    return { ...h, weighted: w };
+  });
+
+  const totalW = weighted.reduce((s, h) => s + h.weighted, 0);
+  const results = weighted.map(h => {
+    const winProb = totalW > 0 ? (h.weighted / totalW) * 100 : 100 / weighted.length;
+    const mlImplied = 1 / (h.ml + 1) * 100;
+    const edge = winProb - mlImplied;
+    return { ...h, winProb, mlImplied, edge };
+  }).sort((a, b) => b.winProb - a.winProb);
+
+  renderResults(results);
+  renderExacta(results);
+}
+
+function minEVOdds(winProb) {
+  // Minimum fair odds to be +EV: (1/p) - 1
+  // Returns a formatted fractional-style string e.g. "3/1", "5/2"
+  const fairOdds = (100 / winProb) - 1;
+  // Express as a clean fraction — find nearest common racing fraction
+  const commonDenoms = [1, 2, 5, 10];
+  let bestNum = Math.round(fairOdds), bestDen = 1;
+  let bestErr = Math.abs(fairOdds - bestNum);
+  for (const d of commonDenoms) {
+    const n = Math.round(fairOdds * d);
+    const err = Math.abs(fairOdds - n / d);
+    if (err < bestErr) { bestErr = err; bestNum = n; bestDen = d; }
+  }
+  // Simplify
+  const g = gcd(bestNum, bestDen);
+  return `${bestNum/g}/${bestDen/g}`;
+}
+
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+function renderResults(results) {
+  const area = document.getElementById('resultsArea');
+  document.getElementById('resultCount').textContent = `${results.length} horses`;
+
+  const maxProb = results[0].winProb;
+  let html = '';
+  results.forEach((h, idx) => {
+    const edgeClass = h.edge >= 4 ? 'edge-value' : h.edge <= -4 ? 'edge-fade' : 'edge-neutral';
+    const edgeLabel = h.edge >= 4 ? `+${h.edge.toFixed(1)}%` : h.edge <= -4 ? `${h.edge.toFixed(1)}%` : `${h.edge > 0 ? '+' : ''}${h.edge.toFixed(1)}%`;
+    const barWidth = (h.winProb / maxProb * 100).toFixed(1);
+    const boxStar = h.boxed ? '<span class="box-star active" title="In exacta box">★</span>' : '<span class="box-star">★</span>';
+    // Min odds to be +EV — fair decimal odds * $2 = min $2 payout
+    const fairDecimal = 100 / h.winProb;
+    const minPayout = (fairDecimal * 2).toFixed(2);
+    const minOdds = minEVOdds(h.winProb);
+    html += `
+      <div class="result-row">
+        <span class="result-rank">${idx + 1}</span>
+        <span class="result-name">${h.name}<span class="post">#${h.post}</span></span>
+        <div class="result-bar-wrap">
+          <div class="result-bar"><div class="result-bar-fill" style="width:${barWidth}%"></div></div>
+        </div>
+        <span class="result-prob">${h.winProb.toFixed(1)}%</span>
+        <span class="edge-badge ${edgeClass}" title="Edge vs morning line">${edgeLabel}</span>
+        <span class="min-odds-badge" title="Minimum odds needed to be +EV">≥ ${minOdds}</span>
+        ${boxStar}
+      </div>
+    `;
+  });
+  area.innerHTML = html;
+}
+
+function renderExacta(results) {
+  const area = document.getElementById('exactaArea');
+  const boxHorses = results.filter(h => h.boxed);
+
+  if (boxHorses.length < 2) {
+    area.innerHTML = '<div class="empty-state">Flag 2–4 horses with ★ in the input table</div>';
+    return;
+  }
+
+  // Generate all directional combos
+  const combos = [];
+  for (let i = 0; i < boxHorses.length; i++) {
+    for (let j = 0; j < boxHorses.length; j++) {
+      if (i === j) continue;
+      const a = boxHorses[i], b = boxHorses[j];
+      const pA = a.winProb / 100;
+      const pB = b.winProb / 100;
+      const prob = pA * (pB / (1 - pA)) * 100;
+      combos.push({ a, b, prob });
+    }
+  }
+  combos.sort((x, y) => y.prob - x.prob);
+
+  const totalBoxProb = combos.reduce((s, c) => s + c.prob, 0);
+  const boxCost = combos.length * 2;
+
+  let html = `
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-label">Box combos</div>
+        <div class="stat-value">${combos.length}</div>
+        <div class="stat-sub">$${boxCost} at $2/combo</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Total box prob</div>
+        <div class="stat-value">${totalBoxProb.toFixed(1)}%</div>
+        <div class="stat-sub">chance any combo hits</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Break-even</div>
+        <div class="stat-value">$${(boxCost / (totalBoxProb / 100)).toFixed(0)}</div>
+        <div class="stat-sub">needed total payout</div>
+      </div>
+    </div>
+  `;
+
+  html += `
+    <div class="payout-input-row">
+      <label>Est. exacta payout ($)</label>
+      <input type="number" id="payoutInput" placeholder="28.00" min="0" step="1" oninput="updateEV()" style="width:90px">
+    </div>
+    <div class="payout-note" id="evNote">Enter expected payout to see +EV flags per combo</div>
+    <div style="margin-top:14px" id="comboList">
+  `;
+
+  combos.forEach((c, idx) => {
+    const minPayout = (2 / (c.prob / 100)).toFixed(2);
+    html += `
+      <div class="exacta-combo">
+        <div class="combo-horses">
+          <span>${c.a.name}</span>
+          <span class="combo-arrow">→</span>
+          <span>${c.b.name}</span>
+        </div>
+        <span class="combo-prob">${c.prob.toFixed(1)}%</span>
+        <span class="combo-ev" id="ev${idx}" data-min="${minPayout}" data-prob="${c.prob}">min $${minPayout}</span>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function updateEV() {
+  const payout = parseFloat(document.getElementById('payoutInput').value);
+  if (!payout) return;
+  const evEls = document.querySelectorAll('[id^="ev"]');
+  let goodCount = 0;
+  evEls.forEach(el => {
+    const minPayout = parseFloat(el.dataset.min);
+    if (payout >= minPayout) {
+      el.textContent = `+EV (min $${minPayout})`;
+      el.classList.add('good');
+      goodCount++;
+    } else {
+      el.textContent = `min $${minPayout}`;
+      el.classList.remove('good');
+    }
+  });
+  const note = document.getElementById('evNote');
+  if (note) {
+    note.textContent = goodCount > 0
+      ? `${goodCount} combo${goodCount > 1 ? 's' : ''} are +EV at a $${payout} payout`
+      : `No combos are +EV at $${payout} — you need a higher payout or tighter box`;
+    note.style.color = goodCount > 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+function clearAll() {
+  for (let i = 1; i <= NUM_HORSES; i++) {
+    ['name','ml','esf1_','esf2_','esf3_','classLast','jock','trn','days'].forEach(f => {
+      const el = document.getElementById(`${f}${i}`);
+      if (el) el.value = '';
+    });
+    document.getElementById(`dist${i}`).value = '0';
+    document.getElementById(`surf${i}`).value = '0';
+    document.getElementById(`box${i}`).classList.remove('active');
+  }
+  document.getElementById('resultsArea').innerHTML = '<div class="empty-state">Enter horses and run model</div>';
+  document.getElementById('exactaArea').innerHTML = '<div class="empty-state">Flag horses with ★ to build box</div>';
+  document.getElementById('resultCount').textContent = '';
+}
+
+function loadDemo() {
+  const demo = [
+    { name:'Saratoga Wind', ml:3.5, esf:[98,95,92], classT:25000, classL:25000, dist:'1', surf:'1', jock:0.22, trn:0.18, days:21 },
+    { name:'Lucky Charm',   ml:5,   esf:[94,91,96], classT:25000, classL:40000, dist:'0.5', surf:'1', jock:0.15, trn:0.12, days:14 },
+    { name:'Iron Hammer',   ml:8,   esf:[96,88,85], classT:25000, classL:20000, dist:'1', surf:'0', jock:0.19, trn:0.20, days:35 },
+    { name:'Desert Rose',   ml:12,  esf:[89,87,90], classT:25000, classL:25000, dist:'0', surf:'1', jock:0.10, trn:0.14, days:28 },
+    { name:'Blue Cardinal', ml:6,   esf:[92,90,88], classT:25000, classL:30000, dist:'1', surf:'1', jock:0.17, trn:0.11, days:42 },
+    { name:'Storm Chaser',  ml:15,  esf:[86,91,83], classT:25000, classL:20000, dist:'0.5', surf:'1', jock:0.08, trn:0.09, days:7 },
+  ];
+
+  clearAll();
+  demo.forEach((h, idx) => {
+    const i = idx + 1;
+    document.getElementById(`name${i}`).value = h.name;
+    document.getElementById(`ml${i}`).value = h.ml;
+    document.getElementById(`esf1_${i}`).value = h.esf[0];
+    document.getElementById(`esf2_${i}`).value = h.esf[1];
+    document.getElementById(`esf3_${i}`).value = h.esf[2];
+    document.getElementById(`classLast${i}`).value = h.classL;
+    document.getElementById(`dist${i}`).value = h.dist;
+    document.getElementById(`surf${i}`).value = h.surf;
+    document.getElementById(`jock${i}`).value = h.jock;
+    document.getElementById(`trn${i}`).value = h.trn;
+    document.getElementById(`days${i}`).value = h.days;
+  });
+
+  // Box top 3
+  [1, 3, 5].forEach(i => document.getElementById(`box${i}`).classList.add('active'));
+  document.getElementById('track').value = 'Saratoga';
+  document.getElementById('raceNum').value = '5';
+  document.getElementById('distance').value = '6f';
+  document.getElementById('surface').value = 'Dirt';
+
+  runModel();
+}
+
+buildTable();
+</script>
+</body>
+</html>
